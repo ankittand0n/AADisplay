@@ -132,7 +132,13 @@ class AaMainFragment : BaseFragment<FragmentAaMainBinding>(FragmentAaMainBinding
                 baseBinding.tvDisplay.width,
                 baseBinding.tvDisplay.height,
                 AADisplayConfig.VirtualDisplayDpi.get(config).let {
-                    if(it <= 50) resources.displayMetrics.densityDpi
+                    if(it <= 50) {
+                        // Auto-calculate DPI based on head unit resolution for readable UI
+                        val width = baseBinding.tvDisplay.width
+                        val height = baseBinding.tvDisplay.height
+                        val shortSide = minOf(width, height)
+                        (shortSide * 160 / 480).coerceIn(120, 320)
+                    }
                     else it
                 },
                 object : IVirtualDisplayCreatedListener.Stub() {

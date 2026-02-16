@@ -18,11 +18,16 @@
     <string name="SettingsHomePackageTitle">Home Package</string>
     <string name="SettingsHomePackageSummary">Package name of the app to launch when Home key is pressed</string>
     <string name="SettingsAndroidAutoDpi">Android Auto DPI</string>
+    <string name="SettingsAndroidAutoDpiSummary">DPI for AA rendering (0 = auto from resolution)</string>
     <string name="SettingsVirtualDisplayDpi">Virtual Display DPI</string>
+    <string name="SettingsVirtualDisplayDpiSummary">DPI for virtual display (0 = auto from resolution)</string>
     <string name="SettingsDestructionDelay">Delay Destroy Time</string>
     <string name="SettingsReplaceLockScreenTitle">Screen Off Only</string>
     <string name="SettingsReplaceLockScreenSummary">Power button replaces screen off only</string>
     <string name="SettingsCloseLauncherDashboard">Prevent AA Split Screen Toggle</string>
+    <string name="SettingsCloseLauncherDashboardSummary">ON = full takeover, OFF = widget mode. AA will restart on change.</string>
+    <string name="SettingsShowFloatingController">Show Floating Controller</string>
+    <string name="SettingsShowFloatingControllerSummary">Show floating overlay buttons on phone screen</string>
     <string name="SettingsForceRightAngle">Force Right Angle</string>
     <string name="SettingsImePolicy">IME Policy</string>
     <string name="SettingsImeDisplayVirtualScreen">Virtual Screen</string>

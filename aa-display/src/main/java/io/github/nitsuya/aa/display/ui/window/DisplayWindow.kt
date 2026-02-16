@@ -74,6 +74,7 @@ class DisplayWindow(
     }
 
     private var mScreenOffReplaceLockScreen = AADisplayConfig.ScreenOffReplaceLockScreen.get(CoreManagerService.config)
+    private val mShowFloatingController = AADisplayConfig.ShowFloatingController.get(CoreManagerService.config)
     private val mDelayDestroyTime = AADisplayConfig.DelayDestroyTime.get(CoreManagerService.config).let { value ->
         if (value < 0) 0 else value
     }
@@ -161,12 +162,6 @@ class DisplayWindow(
         mControllerBinding?.apply {
             root.allViews.forEach {
                 it.setOnTouchListener(this@DisplayWindow)
-            }
-            if(mScreenOffReplaceLockScreen){
-                ibExtinguish.visibility = View.VISIBLE
-                ibExtinguish.setOnClickListener {
-                    toggleDisplayPower(false)
-                }
             }
             if(mDelayDestroyTime > 0){
                 ibDisconnectType.visibility = View.VISIBLE
@@ -413,14 +408,74 @@ class DisplayWindow(
         }
     }
 
+    /**
+     * Cached display token for controlling physical display power.
+     * Resolved once via fallback chain: getInternalDisplayToken() → getPhysicalDisplayToken().
+     */
+    private var cachedDisplayToken: android.os.IBinder? = null
+    private var displayTokenUnavailable = false
+
+    /** Saved brightness values for restoring after screen-off via brightness fallback */
+    private var savedBrightness = -1
+    private var savedBrightnessMode = -1
+
+    private fun getDisplayToken(): android.os.IBinder? {
+        if (displayTokenUnavailable) return null
+        cachedDisplayToken?.let { return it }
+        // Try legacy API first (Android <14)
+        try {
+            val token = SurfaceControlHidden.getInternalDisplayToken()
+            if (token != null) {
+                cachedDisplayToken = token
+                log(TAG, "Display token resolved via getInternalDisplayToken()")
+                return token
+            }
+        } catch (_: Throwable) {}
+        // Fallback: getPhysicalDisplayIds + getPhysicalDisplayToken (Android 14+)
+        try {
+            val ids = SurfaceControlHidden.getPhysicalDisplayIds()
+            if (ids != null && ids.isNotEmpty()) {
+                val token = SurfaceControlHidden.getPhysicalDisplayToken(ids[0])
+                if (token != null) {
+                    cachedDisplayToken = token
+                    log(TAG, "Display token resolved via getPhysicalDisplayToken(${ids[0]})")
+                    return token
+                }
+            }
+        } catch (_: Throwable) {}
+        log(TAG, "Display token unavailable, will use brightness fallback")
+        displayTokenUnavailable = true
+        return null
+    }
+
     fun toggleDisplayPower(displayPower: Boolean = !mDisplayPower){
         try {
             if(mScreenOffReplaceLockScreen){
                 mDisplayPower = displayPower
-                if(mDisplayPower){
-                    SurfaceControlHidden.setDisplayPowerMode(SurfaceControlHidden.getInternalDisplayToken(), SurfaceControlHidden.POWER_MODE_NORMAL)
+                val token = getDisplayToken()
+                if (token != null) {
+                    val mode = if (mDisplayPower) SurfaceControlHidden.POWER_MODE_NORMAL else SurfaceControlHidden.POWER_MODE_OFF
+                    SurfaceControlHidden.setDisplayPowerMode(token, mode)
                 } else {
-                    SurfaceControlHidden.setDisplayPowerMode(SurfaceControlHidden.getInternalDisplayToken(), SurfaceControlHidden.POWER_MODE_OFF)
+                    // Fallback: dim screen brightness to 0 (keeps device awake, virtual display running)
+                    val cr = mContext.contentResolver
+                    if (mDisplayPower) {
+                        // Restore original brightness
+                        if (savedBrightness >= 0) {
+                            Settings.System.putInt(cr, Settings.System.SCREEN_BRIGHTNESS, savedBrightness)
+                        }
+                        if (savedBrightnessMode >= 0) {
+                            Settings.System.putInt(cr, Settings.System.SCREEN_BRIGHTNESS_MODE, savedBrightnessMode)
+                        }
+                        log(TAG, "Display power ON via brightness restore ($savedBrightness)")
+                    } else {
+                        // Save current brightness, then set to 0
+                        savedBrightness = Settings.System.getInt(cr, Settings.System.SCREEN_BRIGHTNESS, 128)
+                        savedBrightnessMode = Settings.System.getInt(cr, Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL)
+                        Settings.System.putInt(cr, Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL)
+                        Settings.System.putInt(cr, Settings.System.SCREEN_BRIGHTNESS, 0)
+                        log(TAG, "Display power OFF via brightness=0 (saved=$savedBrightness, mode=$savedBrightnessMode)")
+                    }
                 }
             } else {
                 Instances.powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "${BuildConfig.APPLICATION_ID}:wakeup").apply {
@@ -429,11 +484,12 @@ class DisplayWindow(
                 }
             }
         } catch (e : Throwable){
-            log(TAG, "", e)
+            log(TAG, "toggleDisplayPower error", e)
         }
     }
 
     private fun showController(){
+        if (!mShowFloatingController) return
         if(mMirrorStatus){
             hideMirror()
         }

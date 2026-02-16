@@ -48,8 +48,17 @@ public class SurfaceControlHidden {
         throw new RuntimeException("Stub!");
     }
 
+    @Deprecated
     @NonNull
     public static IBinder getInternalDisplayToken() {
+        throw new RuntimeException("Stub!");
+    }
+
+    public static long[] getPhysicalDisplayIds() {
+        throw new RuntimeException("Stub!");
+    }
+
+    public static IBinder getPhysicalDisplayToken(long physicalDisplayId) {
         throw new RuntimeException("Stub!");
     }
 

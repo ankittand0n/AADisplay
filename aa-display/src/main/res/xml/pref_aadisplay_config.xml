@@ -36,15 +36,19 @@
 
         <EditTextPreference
             android:inputType="number"
+            app:defaultValue="0"
             app:key="AndroidAutoDpi"
             app:title="@string/SettingsAndroidAutoDpi"
+            app:summary="@string/SettingsAndroidAutoDpiSummary"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
 
         <EditTextPreference
             android:inputType="number"
+            app:defaultValue="0"
             app:key="VirtualDisplayDpi"
             app:title="@string/SettingsVirtualDisplayDpi"
+            app:summary="@string/SettingsVirtualDisplayDpiSummary"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
 
@@ -67,6 +71,14 @@
             app:defaultValue="true"
             app:key="CloseLauncherDashboard"
             app:title="@string/SettingsCloseLauncherDashboard"
+            app:summary="@string/SettingsCloseLauncherDashboardSummary"
+            app:iconSpaceReserved="false"/>
+
+        <rikka.material.preference.MaterialSwitchPreference
+            app:defaultValue="true"
+            app:key="ShowFloatingController"
+            app:title="@string/SettingsShowFloatingController"
+            app:summary="@string/SettingsShowFloatingControllerSummary"
             app:iconSpaceReserved="false"/>
 
         <rikka.material.preference.MaterialSwitchPreference

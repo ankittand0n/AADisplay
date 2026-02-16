@@ -129,7 +129,7 @@ object AaUiHook: AaHook() {
     override fun hook(config: SharedPreferences, lpparam: XC_LoadPackage.LoadPackageParam) {
         log(tagName,  "AaUiHook: ~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         hookBaseClick()
-        hookLayout()
+        hookLayout(config)
         hookFacetBar(config)
         hookRadius(config)
     }
@@ -147,19 +147,23 @@ object AaUiHook: AaHook() {
         }.joinToString(separator = "\r\n", prefix = "    ".repeat(index)) { it }
     }
 
-    private fun hookLayout() {
+    private fun hookLayout(config: SharedPreferences) {
         if (layoutInfoConstructor == null) {
             return
         }
+        val closeLauncherDashboard = AADisplayConfig.CloseLauncherDashboard.get(config)
         layoutInfoConstructor?.hookAfter { param -> log(tagName, param.thisObject.toString()) }
-        layoutInfoConstructor?.hookBefore { param ->
-            when(param.args[3] as Int){ //layoutType
-                8,9,10 -> return@hookBefore;
+        if (closeLauncherDashboard) {
+            // Only force vertical rail (full takeover) when "Prevent AA Split Screen" is ON
+            layoutInfoConstructor?.hookBefore { param ->
+                when(param.args[3] as Int){ //layoutType
+                    8,9,10 -> return@hookBefore;
+                }
+                var isRightHandDrive = param.args[4] as Boolean // isRightHandDrive left false, right:true
+                param.args[0] = if(isRightHandDrive) resLayoutRightResourceId else resLayoutLeftResourceId
+                param.args[3] = if(isRightHandDrive) 4 else 3//layoutType left:3, right:4
+                param.args[5] = true //hasVerticalRail
             }
-            var isRightHandDrive = param.args[4] as Boolean // isRightHandDrive left false, right:true
-            param.args[0] = if(isRightHandDrive) resLayoutRightResourceId else resLayoutLeftResourceId
-            param.args[3] = if(isRightHandDrive) 4 else 3//layoutType left:3, right:4
-            param.args[5] = true //hasVerticalRail
         }
     }
 
@@ -182,13 +186,6 @@ object AaUiHook: AaHook() {
             val layoutInflater = LayoutInflater.from(ctx2)
             val resultViewGroupParent = (resultViewGroup.parent as ViewGroup?)?.apply {
                 removeView(resultViewGroup)
-            }
-            if(closeLauncherDashboard){
-                resultViewGroup.findViewById<View>(resIdLauncherAndDashboardIconId).apply {
-                    setOnClickFinallyListener {
-                        performLongClick()
-                    }
-                }
             }
             val aaFacetBar = layoutInflater.inflate(R.layout.aa_facet_bar, resultViewGroupParent, false) as ConstraintLayout
             if(autoOpen){
@@ -340,7 +337,10 @@ object AaUiHook: AaHook() {
     }
 
     private fun hookRadius(config: SharedPreferences) {
-        if (!AADisplayConfig.ForceRightAngle.get(config)) {
+        val forceRightAngle = AADisplayConfig.ForceRightAngle.get(config)
+        val closeLauncherDashboard = AADisplayConfig.CloseLauncherDashboard.get(config)
+        // Only force right angles in full takeover mode AND when the setting is ON
+        if (!forceRightAngle || !closeLauncherDashboard) {
             return
         }
         try {

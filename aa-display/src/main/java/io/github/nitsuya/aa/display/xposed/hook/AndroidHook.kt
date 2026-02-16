@@ -81,18 +81,37 @@ object AndroidHook : BaseHook() {
     }
 
     object Power {
+        /** true = 3rd param is Boolean (AOSP), false = 3rd param is Int (some ROMs) */
+        private var nonInteractiveArgIsBoolean = true
         private val powerPress by lazy {
             if(!IsSystemEnv) return@lazy null
+            // Try AOSP signature first: powerPress(long, int, boolean)
             try{
-                findMethod("com.android.server.policy.PhoneWindowManager") {
+                val m = findMethod("com.android.server.policy.PhoneWindowManager") {
                     name == "powerPress"
                             && parameterCount == 3
-                            && parameterTypes[0] == Long::class.javaPrimitiveType //eventTime
-                            && parameterTypes[1] == Int::class.javaPrimitiveType //count
-                            && parameterTypes[2] == Boolean::class.javaPrimitiveType //beganFromNonInteractive
+                            && parameterTypes[0] == Long::class.javaPrimitiveType
+                            && parameterTypes[1] == Int::class.javaPrimitiveType
+                            && parameterTypes[2] == Boolean::class.javaPrimitiveType
                 }
+                nonInteractiveArgIsBoolean = true
+                log(tagName, "Power: using powerPress(long, int, boolean) signature")
+                return@lazy m
+            } catch (_: Throwable) {}
+            // Fallback: powerPress(long, int, int) — some ROMs use int instead of boolean
+            try{
+                val m = findMethod("com.android.server.policy.PhoneWindowManager") {
+                    name == "powerPress"
+                            && parameterCount == 3
+                            && parameterTypes[0] == Long::class.javaPrimitiveType
+                            && parameterTypes[1] == Int::class.javaPrimitiveType
+                            && parameterTypes[2] == Int::class.javaPrimitiveType
+                }
+                nonInteractiveArgIsBoolean = false
+                log(tagName, "Power: using powerPress(long, int, int) signature")
+                return@lazy m
             } catch (e: Throwable){
-                log(tagName,  "Power PhoneWindowManager.powerPress", e)
+                log(tagName, "Power: could not find any powerPress signature", e)
                 null
             }
         }
@@ -100,7 +119,12 @@ object AndroidHook : BaseHook() {
         fun hook(){
             unHook()
             hookPower = powerPress?.hookBefore {
-                if (!(it.args[2] as Boolean)) {
+                val beganFromNonInteractive = if (nonInteractiveArgIsBoolean) {
+                    it.args[2] as Boolean
+                } else {
+                    (it.args[2] as Int) != 0
+                }
+                if (!beganFromNonInteractive) {
                     CoreApi.toggleDisplayPower()
                     it.abortMethod()
                 } else {

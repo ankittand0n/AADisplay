@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.Instrumentation
 import android.content.SharedPreferences
 import com.github.kyuubiran.ezxhelper.init.EzXHelperInit
+import com.github.kyuubiran.ezxhelper.init.InitFields
 import com.github.kyuubiran.ezxhelper.utils.findMethod
 import com.github.kyuubiran.ezxhelper.utils.hookBefore
 import de.robv.android.xposed.XC_MethodHook
@@ -63,7 +64,16 @@ object AndroidAuoHook : BaseHook() {
 
                     onCreateApplication?.unhook()
                     EzXHelperInit.initAppContext()
-                    System.loadLibrary("dexkit")
+                    try {
+                        System.loadLibrary("dexkit")
+                    } catch (e: UnsatisfiedLinkError) {
+                        // LSPosed classloader may not find the lib; resolve via PackageManager
+                        val ctx = InitFields.appContext
+                        val modInfo = ctx.packageManager.getApplicationInfo(
+                            "io.github.nitsuya.aa.display", 0
+                        )
+                        System.load("${modInfo.nativeLibraryDir}/libdexkit.so")
+                    }
                     DexKitBridge.create(lpparam.appInfo.sourceDir).use { bridge ->
                         if (bridge == null) {
                             log(tagName, "DexKitBridge.create() failed")

@@ -18,6 +18,9 @@ android {
     }
 
     packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
         resources.excludes.addAll(
             arrayOf(
                 "META-INF/**",
