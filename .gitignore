@@ -10,3 +10,8 @@ aa-display/build
 .externalNativeBuild
 .cxx
 local.properties
+
+# Signing keys
+key.jks
+key.jks.bak
+*.keystore
