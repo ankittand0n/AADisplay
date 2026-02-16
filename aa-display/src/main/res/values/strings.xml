@@ -15,8 +15,9 @@
     <string name="SettingsAutoOpenTitle">Auto Open</string>
     <string name="SettingsAutoOpenSummary">Automatically open app after connecting to Android Auto</string>
     <string name="SettingsAutoOpenPackageName">Default Launch Package</string>
+    <string name="SettingsAutoOpenPackageSummary">App launched on virtual display creation (startup app)</string>
     <string name="SettingsHomePackageTitle">Home Package</string>
-    <string name="SettingsHomePackageSummary">Package name of the app to launch when Home key is pressed</string>
+    <string name="SettingsHomePackageSummary">Launcher for Home button. Must be different from phone launcher.</string>
     <string name="SettingsAndroidAutoDpi">Android Auto DPI</string>
     <string name="SettingsAndroidAutoDpiSummary">DPI for AA rendering (0 = auto from resolution)</string>
     <string name="SettingsVirtualDisplayDpi">Virtual Display DPI</string>

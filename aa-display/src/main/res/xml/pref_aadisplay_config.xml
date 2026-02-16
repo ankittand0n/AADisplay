@@ -20,7 +20,7 @@
             app:defaultValue="com.autonavi.amapauto"
             app:key="LauncherPackage"
             app:title="@string/SettingsAutoOpenPackageName"
-            app:summary="Package name of the app to launch when virtual display is created, can be empty"
+            app:summary="@string/SettingsAutoOpenPackageSummary"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false"/>
 
