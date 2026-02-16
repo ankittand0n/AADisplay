@@ -4,7 +4,7 @@
 /.idea
 .DS_Store
 /build
-gradle/
+.gradle/
 aa-display/build
 /captures
 .externalNativeBuild
