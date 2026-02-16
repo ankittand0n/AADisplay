@@ -11,4 +11,27 @@
     <string name="need_LSPosed">Need LSPosed</string>
     <string name="not_activated">Not Activated</string>
     <string name="reboot">Reboot</string>
+    <string name="SettingsCategoryBasic">Basic Settings</string>
+    <string name="SettingsAutoOpenTitle">Auto Open</string>
+    <string name="SettingsAutoOpenSummary">Automatically open app after connecting to Android Auto</string>
+    <string name="SettingsAutoOpenPackageName">Default Launch Package</string>
+    <string name="SettingsHomePackageTitle">Home Package</string>
+    <string name="SettingsHomePackageSummary">Package name of the app to launch when Home key is pressed</string>
+    <string name="SettingsAndroidAutoDpi">Android Auto DPI</string>
+    <string name="SettingsVirtualDisplayDpi">Virtual Display DPI</string>
+    <string name="SettingsDestructionDelay">Delay Destroy Time</string>
+    <string name="SettingsReplaceLockScreenTitle">Screen Off Only</string>
+    <string name="SettingsReplaceLockScreenSummary">Power button replaces screen off only</string>
+    <string name="SettingsCloseLauncherDashboard">Prevent AA Split Screen Toggle</string>
+    <string name="SettingsForceRightAngle">Force Right Angle</string>
+    <string name="SettingsImePolicy">IME Policy</string>
+    <string name="SettingsImeDisplayVirtualScreen">Virtual Screen</string>
+    <string name="SettingsImeDisplayMainScreen">Main Screen</string>
+    <string name="SettingsVoiceAssistantShell">Voice Assistant Shell</string>
+    <string name="SettingsCategoryShell">Shell Commands</string>
+    <string name="SettingsShellCreateVirtualDisplayBefore">Execute Before Creating Virtual Display</string>
+    <string name="SettingsShellDestroyVirtualDisplayAfter">Execute After Destroying Virtual Display</string>
+    <string name="SettingsCategoryPhysicalBtn">Physical Buttons</string>
+    <string name="SettingsCategoryAndroidAutoProps">Android Auto Config</string>
+    <string name="props">properties</string>
 </resources>

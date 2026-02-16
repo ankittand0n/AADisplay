@@ -43,13 +43,15 @@ class AaVirtualDisplayAdapter(
 
         private val IGNORE_RECENT_PACKAGE = setOf(
             BuildConfig.APPLICATION_ID,
-            "com.miui.home",
-            "com.google.android.apps.nexuslauncher",
+            "com.android.launcher3"
         )
     }
 
     private var mLauncherPackage = AADisplayConfig.LauncherPackage.get(CoreManagerService.config)
-    private var mLauncherTaskId: Int? = null
+    private var mHomePackage = AADisplayConfig.HomePackage.get(CoreManagerService.config)
+
+    private var mHomeTaskId: Int? = null
+    private var mLauncherPackageTaskId: Int? = null
     private val mTaskStackListener = TaskStackListener()
     var mDisplayId = Display.INVALID_DISPLAY
     var mDensityDpi: Int = 0
@@ -124,7 +126,7 @@ class AaVirtualDisplayAdapter(
                 setShouldShowSystemDecors(mDisplayId, false)
             }
         } catch (e : Throwable){
-            log(TAG, "设置虚拟屏幕参数失败: ", e)
+            log(TAG, "Failed to set virtual screen parameters: ", e)
         }
         //mDisplayWindowManager = context.createDisplayContext(mVirtualDisplay.display).getSystemService(WindowManager::class.java).apply {
         mDisplayWindowManager = context.createDisplayContext(mVirtualDisplay.display).createWindowContext(mVirtualDisplay.display, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, null).getSystemService(WindowManager::class.java).apply {
@@ -139,7 +141,11 @@ class AaVirtualDisplayAdapter(
                     PixelFormat.TRANSPARENT
                 ).also {
                     it.gravity = Gravity.START or Gravity.TOP
-                    it.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                    it.screenOrientation = if (width > height) {
+                        ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                    } else {
+                        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                    }
                     it.alpha = 0f
                     it.width = 0
                     it.height = 0
@@ -147,13 +153,19 @@ class AaVirtualDisplayAdapter(
             )
         }
         Instances.iActivityTaskManager.registerTaskStackListener(mTaskStackListener)
-        startLauncher()
+        if (mLauncherPackage != null) {
+            startDefaultPackage()
+        } else {
+            startHomeLauncher()
+        }
         onVirtualDisplayCreated(mDisplayId)
     }
 
     fun onReconnected(width: Int, height: Int, densityDpi: Int){
         mVirtualDisplay.resize(width, height, densityDpi)
         mDensityDpi = densityDpi
+        mLauncherPackage = AADisplayConfig.LauncherPackage.get(CoreManagerService.config)
+        mHomePackage = AADisplayConfig.HomePackage.get(CoreManagerService.config)
     }
 
     fun onDestroy() {
@@ -162,7 +174,7 @@ class AaVirtualDisplayAdapter(
             Instances.iActivityTaskManager.apply {
                 getAllRootTaskInfosOnDisplay(mDisplayId).forEach{ task ->
                     removeTask(task.taskId)
-                    task.topActivity?.packageName.let { pkgName ->
+                    task.topActivity?.packageName?.let { pkgName ->
                         Instances.activityManagerHidden.forceStopPackageAsUser(pkgName, task.getObjectAs("userId", Int::class.javaPrimitiveType) as Int)
                     }
                 }
@@ -244,9 +256,22 @@ class AaVirtualDisplayAdapter(
     }
 
     fun startLauncher(){
-        if(mLauncherPackage == null) return
-        if(mLauncherTaskId != null){
-            moveTaskToFront(mLauncherTaskId!!)
+        startHomeLauncher()
+    }
+
+    private fun startHomeLauncher() {
+        if (mHomePackage == null) return
+        if (mHomeTaskId != null) {
+            moveTaskToFront(mHomeTaskId!!)
+        } else {
+            startActivity(mHomePackage!!, 0)
+        }
+    }
+
+    private fun startDefaultPackage() {
+        if (mLauncherPackage == null) return
+        if (mLauncherPackageTaskId != null) {
+            moveTaskToFront(mLauncherPackageTaskId!!)
         } else {
             startActivity(mLauncherPackage!!, 0)
         }
@@ -350,7 +375,7 @@ class AaVirtualDisplayAdapter(
             return
         }
         moveTaskToFront(
-            if(allRootTaskInfosOnDisplay.size == 2 || allRootTaskInfosOnDisplay[1].topActivity!!.packageName != mLauncherPackage){
+            if(allRootTaskInfosOnDisplay.size == 2 || allRootTaskInfosOnDisplay[1].topActivity?.packageName != mHomePackage){
                 allRootTaskInfosOnDisplay[1].taskId
             } else {
                 allRootTaskInfosOnDisplay[2].taskId
@@ -369,7 +394,7 @@ class AaVirtualDisplayAdapter(
         return allRootTaskInfosOnDisplay
             .map { taskInfo ->
                 val topActivity = taskInfo.topActivity ?: return@map null
-                if(IGNORE_RECENT_PACKAGE.contains(topActivity.packageName) || mLauncherPackage == topActivity.packageName) {
+                if(IGNORE_RECENT_PACKAGE.contains(topActivity.packageName) || mHomePackage == topActivity.packageName) {
                     return@map null
                 }
 
@@ -435,13 +460,20 @@ class AaVirtualDisplayAdapter(
         override fun onActivityLaunchOnSecondaryDisplayFailed(taskInfo: ActivityManager.RunningTaskInfo?, requestedDisplayId: Int) {}
         override fun onActivityLaunchOnSecondaryDisplayRerouted(taskInfo: ActivityManager.RunningTaskInfo?, requestedDisplayId: Int) {}
         override fun onTaskCreated(taskId: Int, componentName: ComponentName?) {
-            if(componentName?.packageName != mLauncherPackage) return
-            mLauncherTaskId = taskId
+            val packageName = componentName?.packageName ?: return
+            if (packageName == mHomePackage) {
+                mHomeTaskId = taskId
+            } else if (packageName == mLauncherPackage) {
+                mLauncherPackageTaskId = taskId
+            }
         }
         override fun onTaskRemoved(taskId: Int) {
-            if(mLauncherTaskId != taskId) return
-            mLauncherTaskId = null
-            startLauncher()
+            if (mHomeTaskId == taskId) {
+                mHomeTaskId = null
+                startHomeLauncher()
+            } else if (mLauncherPackageTaskId == taskId) {
+                mLauncherPackageTaskId = null
+            }
         }
         override fun onTaskMovedToFront(taskInfo: ActivityManager.RunningTaskInfo) {}
         override fun onTaskDescriptionChanged(taskInfo: ActivityManager.RunningTaskInfo) {}
@@ -467,5 +499,13 @@ class AaVirtualDisplayAdapter(
         override fun onTaskbarIconVisibleChangeRequest(componentName: ComponentName?, z: Boolean) {}
         //Samsung OneUi 7
         override fun onTaskWindowingModeChanged(i: Int) {}
+
+        // Compatibility shim for Android/AA 15.6+
+        override fun onRecentTaskRemovedForAddTask(taskId: Int) {
+            try {
+                // no-op
+            } catch (_: Throwable) {
+            }
+        }
     }
 }

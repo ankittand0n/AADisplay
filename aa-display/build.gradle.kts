@@ -1,8 +1,6 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    //kotlin("android")
-    id("kotlin-android")
     id("dev.rikka.tools.refine") version "4.4.0"
 }
 
@@ -14,8 +12,8 @@ android {
         applicationId = "io.github.nitsuya.aa.display"
         minSdk = 31
         targetSdk = 36
-        versionCode = 2000
-        versionName = "0.20#15.1+"
+        versionCode = 3001
+        versionName = "0.21#15.2+portrait"
         buildConfigField("long", "BUILD_TIME", buildTime.toString())
     }
 
@@ -30,9 +28,9 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file("../key.jks")
-            storePassword = System.getenv("KEY_ANDROID")
+            storePassword = System.getenv("KEY_ANDROID") ?: "android"
             keyAlias = "key0"
-            keyPassword = System.getenv("KEY_ANDROID")
+            keyPassword = System.getenv("KEY_ANDROID") ?: "android"
             enableV1Signing = false
             enableV2Signing = false
             enableV3Signing = true
@@ -47,21 +45,23 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            if (System.getenv("KEY_ANDROID") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             sourceSets.getByName("main").java.srcDir(File("build/generated/ksp/release/kotlin"))
         }
         getByName("debug") {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
-//            proguardFiles(
-//                getDefaultProguardFile("proguard-android-optimize.txt"),
-//                "proguard-rules.pro"
-//            )
+            if (System.getenv("KEY_ANDROID") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+            isDebuggable = true
+            isJniDebuggable = true
         }
 
     }
@@ -76,13 +76,23 @@ android {
     buildFeatures {
         viewBinding = true
         aidl = true
+        buildConfig = true
     }
     lint {
         checkReleaseBuilds = false
         abortOnError = false
     }
 
-    androidResources.additionalParameters += mutableListOf("--allow-reserved-package-id", "--package-id", "0x64")
+    androidResources.additionalParameters += listOf("--allow-reserved-package-id", "--package-id", "0x64")
+
+    applicationVariants.all {
+        val variant = this
+        variant.outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            val safeVersionName = variant.versionName.replace("#", "-")
+            output.outputFileName = "aa-display-${safeVersionName}.apk"
+        }
+    }
 
     namespace = "io.github.nitsuya.aa.display"
     buildToolsVersion = "35.0.0"
@@ -118,7 +128,7 @@ dependencies {
     compileOnly(files("./libs/de.robv.android.xposed_api_82.jar"))
     implementation("com.github.kyuubiran:EzXHelper:1.0.3")
     implementation("com.github.topjohnwu.libsu:core:5.2.0")
-    implementation("org.luckypray:dexkit:2.0.0-rc3")
+    implementation("org.luckypray:dexkit:2.0.0-rc4")
 //    implementation("com.github.martoreto:aauto-sdk:v4.7")
     implementation(files("./libs/aauto.aar"))
 
@@ -132,4 +142,18 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
 
+}
+
+tasks.withType<com.android.build.gradle.tasks.AidlCompile>().configureEach {
+    doLast {
+        sourceOutputDir.get().asFile.walk()
+            .filter { it.name.endsWith(".java") }
+            .forEach { file ->
+                val content = file.readText()
+                val newContent = content.replace(Regex("""\\u(?![0-9a-fA-F]{4})"""), """\\\\u""")
+                if (content != newContent) {
+                    file.writeText(newContent)
+                }
+            }
+    }
 }

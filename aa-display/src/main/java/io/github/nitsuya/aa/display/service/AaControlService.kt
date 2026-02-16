@@ -1,5 +1,6 @@
 package io.github.nitsuya.aa.display.service
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Intent
@@ -30,7 +31,7 @@ import io.github.nitsuya.template.bases.runIO
 import io.github.nitsuya.template.bases.runMain
 import kotlinx.coroutines.delay
 
-@Deprecated("遗留代码")
+@Deprecated("Legacy Code")
 class AaControlService: MediaBrowserServiceCompat() {
     companion object {
         const val TAG = "AaControlService"
@@ -68,9 +69,9 @@ class AaControlService: MediaBrowserServiceCompat() {
                             p0.sendNavigationTurnDistanceEvent(50/* distanceMeters */, 120/* timeSeconds */, 100/* displayDistanceMillis */, TurnEvent.DistanceUnit.METERS/* displayDistanceUnit */)
                             if (p1.supportsCustomImages()){
                                 val customImages = BitmapFactory.decodeResource(resources, R.drawable.ic_aa_home_44)
-                                p0.sendNavigationTurnEvent(CarNavigationStatusManager.TURN_DEPART/* event */, "测试路名,支持自定义"/* road */, 0/* turnAngle */, 0/* turnNumber */, customImages/* image */, TurnEvent.TurnSide.RIGHT/* turnSide */)
+                                p0.sendNavigationTurnEvent(CarNavigationStatusManager.TURN_DEPART/* event */, "Test Road Name"/* road */, 0/* turnAngle */, 0/* turnNumber */, customImages/* image */, TurnEvent.TurnSide.RIGHT/* turnSide */)
                             } else {
-                                p0.sendNavigationTurnEvent(CarNavigationStatusManager.TURN_DEPART/* event */, "测试路名"/* road */, 0/* turnAngle */, 0/* turnNumber */, TurnEvent.TurnSide.RIGHT/* turnSide */)
+                                p0.sendNavigationTurnEvent(CarNavigationStatusManager.TURN_DEPART/* event */, "Test Road Name"/* road */, 0/* turnAngle */, 0/* turnNumber */, TurnEvent.TurnSide.RIGHT/* turnSide */)
                             }
                             //https://github.com/Iscle/OrangePi_4G-IOT_Android_8.1_BSP/blob/58548740b6e9afe99a55b77582588c37609d2bca/packages/services/Car/tests/android_car_api_test/src/android/car/apitest/CarNavigationManagerTest.java#L96
                             //p0.sendEvent(CarNavigationStatusManager.EVENT_TYPE_NEXT_MANEUVER_INFO, Bundle().apply {
@@ -135,15 +136,16 @@ class AaControlService: MediaBrowserServiceCompat() {
         val keys = extras.keySet()
         return keys.joinToString { it } + " \r\n " + keys.mapNotNull { key ->
             val value = extras.get(key)
-            if (value == null) "$key -> null"
+            if (value == null) return@mapNotNull "$key -> null"
             if (value is Bundle) {
                 "$key -> Type:Bundle, ${printBundle(value, index + 1)}"
             } else {
-                "$key -> ${value.toString()}, Type:${value!!::class.java.name}"
+                "$key -> ${value}, Type:${value::class.java.name}"
             }
         }.joinToString(separator = "\r\n", prefix = "    ".repeat(index)) { it }
     }
 
+    @SuppressLint("WorldReadableFiles")
     override fun onCreate() {
         super.onCreate()
         config = this.getSharedPreferences(AADisplayConfig.ConfigName, MODE_WORLD_READABLE)
