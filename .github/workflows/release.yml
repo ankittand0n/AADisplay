@@ -14,9 +14,10 @@ jobs:
       - name: Decode keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > key.jks
       - name: Build release APK
-        run: chmod +x gradlew && ./gradlew :aa-display:assembleRelease
+        run: chmod +x gradlew && ./gradlew :aa-display:assembleRelease --no-daemon
         env:
           KEY_ANDROID: ${{ secrets.KEY_ANDROID }}
+          GRADLE_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=512m
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
