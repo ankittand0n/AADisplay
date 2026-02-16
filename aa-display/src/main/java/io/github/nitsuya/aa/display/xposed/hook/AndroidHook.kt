@@ -7,6 +7,7 @@ import android.content.res.Configuration
 import android.os.Build
 import com.github.kyuubiran.ezxhelper.utils.*
 import de.robv.android.xposed.XC_MethodHook
+import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import io.github.nitsuya.aa.display.CoreApi
 import io.github.nitsuya.aa.display.IsSystemEnv
@@ -212,5 +213,141 @@ object AndroidHook : BaseHook() {
             applicationThread_bindApplication_hook = null
         }
 
+    }
+
+    /**
+     * Prevents the AADisplay virtual display from entering DOZE/OFF state when
+     * the phone screen turns off or enters AOD. Hooks requestDisplayState() to
+     * intercept non-ON requests for the virtual display and keep it ON.
+     */
+    object VirtualDisplayPower {
+        private val hooks = mutableListOf<XC_MethodHook.Unhook>()
+
+        fun hook() {
+            unHook()
+            val hostClassLoader = Initiator.getHostClassLoader()
+            if (hostClassLoader == null) {
+                log(tagName, "VirtualDisplayPower: hostClassLoader is null, cannot hook")
+                return
+            }
+
+            // Hook 1: VirtualDisplayDevice.requestDisplayStateLocked — keeps device state ON
+            val deviceTargets = listOf(
+                "com.android.server.display.VirtualDisplayAdapter\$VirtualDisplayDevice",
+                "com.android.server.display.DisplayDevice"
+            )
+            for (className in deviceTargets) {
+                try {
+                    val clazz = hostClassLoader.loadClass(className)
+                    val method = clazz.declaredMethods.firstOrNull { m ->
+                        m.name == "requestDisplayStateLocked"
+                                && m.parameterTypes.isNotEmpty()
+                                && m.parameterTypes[0] == Int::class.javaPrimitiveType
+                    }
+                    if (method != null) {
+                        hooks.add(XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                            override fun beforeHookedMethod(param: MethodHookParam) {
+                                try {
+                                    val uniqueId = param.thisObject.invokeMethodAutoAs<String>("getUniqueId")
+                                    if (uniqueId != null && uniqueId.contains("AADisplay")) {
+                                        val requestedState = param.args[0] as Int
+                                        if (requestedState != 2) {
+                                            log(tagName, "VirtualDisplayPower[Device]: intercepted state=$requestedState, forcing ON")
+                                            param.args[0] = 2
+                                            for (i in 1 until param.args.size) {
+                                                if (param.args[i] is Float) param.args[i] = 1.0f
+                                            }
+                                        }
+                                    }
+                                } catch (_: Throwable) {}
+                            }
+                        }))
+                        log(tagName, "VirtualDisplayPower: hooked $className.requestDisplayStateLocked (${method.parameterTypes.size} params)")
+                        break
+                    }
+                } catch (e: Throwable) {
+                    log(tagName, "VirtualDisplayPower: failed to hook $className", e)
+                }
+            }
+
+            // Hook 2: LogicalDisplay — intercept the display state that WM/InputDispatcher sees
+            // First enumerate methods to find the right one, then hook getDisplayInfoLocked
+            // to patch the state field in the returned DisplayInfo
+            try {
+                val logicalDisplayClass = hostClassLoader.loadClass("com.android.server.display.LogicalDisplay")
+                
+                // Log all methods for debugging
+                val allMethods = logicalDisplayClass.declaredMethods.map { "${it.name}(${it.parameterTypes.joinToString { p -> p.simpleName }})" }
+                log(tagName, "VirtualDisplayPower: LogicalDisplay methods: ${allMethods.joinToString()}")
+
+                // Try requestDisplayStateLocked first
+                val rdslMethod = logicalDisplayClass.declaredMethods.firstOrNull { m ->
+                    m.name == "requestDisplayStateLocked"
+                }
+                if (rdslMethod != null) {
+                    hooks.add(XposedBridge.hookMethod(rdslMethod, object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            try {
+                                val displayId = param.thisObject.invokeMethodAutoAs<Int>("getDisplayIdLocked")
+                                if (displayId != null && displayId == aaDisplayId) {
+                                    val state = param.args[0] as Int
+                                    if (state != 2) {
+                                        log(tagName, "VirtualDisplayPower[LogicalDisplay]: displayId=$displayId intercepted state=$state, forcing ON")
+                                        param.args[0] = 2
+                                        for (i in 1 until param.args.size) {
+                                            if (param.args[i] is Float) param.args[i] = 1.0f
+                                        }
+                                    }
+                                }
+                            } catch (_: Throwable) {}
+                        }
+                    }))
+                    log(tagName, "VirtualDisplayPower: hooked LogicalDisplay.requestDisplayStateLocked")
+                }
+                
+                // Also hook getDisplayInfoLocked to patch the state in returned DisplayInfo
+                val gdiMethod = logicalDisplayClass.declaredMethods.firstOrNull { m ->
+                    m.name == "getDisplayInfoLocked"
+                }
+                if (gdiMethod != null) {
+                    hooks.add(XposedBridge.hookMethod(gdiMethod, object : XC_MethodHook() {
+                        override fun afterHookedMethod(param: MethodHookParam) {
+                            try {
+                                val displayId = param.thisObject.invokeMethodAutoAs<Int>("getDisplayIdLocked")
+                                if (displayId != null && displayId == aaDisplayId && param.result != null) {
+                                    val displayInfo = param.result
+                                    val stateField = displayInfo!!.javaClass.getField("state")
+                                    val currentState = stateField.getInt(displayInfo)
+                                    if (currentState != 2) {
+                                        stateField.setInt(displayInfo, 2) // Force ON
+                                        log(tagName, "VirtualDisplayPower[DisplayInfo]: patched state=$currentState→ON for displayId=$displayId")
+                                    }
+                                }
+                            } catch (_: Throwable) {}
+                        }
+                    }))
+                    log(tagName, "VirtualDisplayPower: hooked LogicalDisplay.getDisplayInfoLocked")
+                }
+            } catch (e: Throwable) {
+                log(tagName, "VirtualDisplayPower: failed to hook LogicalDisplay", e)
+            }
+
+            if (hooks.isEmpty()) {
+                log(tagName, "VirtualDisplayPower: no hooks installed")
+            }
+        }
+
+        private var aaDisplayId: Int = -1
+
+        fun setAADisplayId(displayId: Int) {
+            aaDisplayId = displayId
+            log(tagName, "VirtualDisplayPower: tracked AADisplay displayId=$displayId")
+        }
+
+        fun unHook() {
+            hooks.forEach { it.unhook() }
+            hooks.clear()
+            aaDisplayId = -1
+        }
     }
 }

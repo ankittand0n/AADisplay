@@ -385,6 +385,16 @@ class AaVirtualDisplayAdapter(
 
     private fun injectInputEvent(event: InputEvent){
         event.invokeMethod("setDisplayId", args(mDisplayId), argTypes(Integer.TYPE))
+        // When device is in AOD/doze, poke the power manager so InputDispatcher accepts injection
+        if (!Instances.powerManager.isInteractive) {
+            try {
+                Instances.powerManager.invokeMethod(
+                    "userActivity",
+                    args(SystemClock.uptimeMillis(), 2 /* USER_ACTIVITY_EVENT_TOUCH */, 1 /* USER_ACTIVITY_FLAG_NO_CHANGE_LIGHTS */),
+                    argTypes(Long::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!)
+                )
+            } catch (_: Throwable) {}
+        }
         Instances.iInputManager.injectInputEvent(event, 0)
     }
 

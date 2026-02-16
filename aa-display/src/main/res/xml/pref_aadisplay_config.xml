@@ -17,7 +17,7 @@
         <EditTextPreference
             android:inputType="text"
             app:singleLineTitle="true"
-            app:defaultValue="com.autonavi.amapauto"
+            app:defaultValue="com.jamal2367.minicarlauncher"
             app:key="LauncherPackage"
             app:title="@string/SettingsAutoOpenPackageName"
             app:summary="@string/SettingsAutoOpenPackageSummary"
@@ -27,7 +27,7 @@
         <EditTextPreference
             android:inputType="text"
             app:singleLineTitle="true"
-            app:defaultValue="com.ss.squarehome2"
+            app:defaultValue="com.jamal2367.minicarlauncher"
             app:key="HomePackage"
             app:title="@string/SettingsHomePackageTitle"
             app:summary="@string/SettingsHomePackageSummary"
@@ -54,7 +54,7 @@
 
         <EditTextPreference
             android:inputType="number"
-            app:defaultValue="180"
+            app:defaultValue="0"
             app:key="DelayDestroyTime"
             app:title="@string/SettingsDestructionDelay"
             app:useSimpleSummaryProvider="true"
@@ -68,14 +68,14 @@
             app:iconSpaceReserved="false"/>
 
         <rikka.material.preference.MaterialSwitchPreference
-            app:defaultValue="true"
+            app:defaultValue="false"
             app:key="CloseLauncherDashboard"
             app:title="@string/SettingsCloseLauncherDashboard"
             app:summary="@string/SettingsCloseLauncherDashboardSummary"
             app:iconSpaceReserved="false"/>
 
         <rikka.material.preference.MaterialSwitchPreference
-            app:defaultValue="true"
+            app:defaultValue="false"
             app:key="ShowFloatingController"
             app:title="@string/SettingsShowFloatingController"
             app:summary="@string/SettingsShowFloatingControllerSummary"

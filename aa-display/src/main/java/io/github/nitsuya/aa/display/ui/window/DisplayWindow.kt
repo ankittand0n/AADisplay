@@ -83,7 +83,7 @@ class DisplayWindow(
     private var interactiveMonitor = object: BroadcastReceiver(){
         val monitor by lazy {
             Instances.powerManagerHidden.newWakeLock(
-                        PowerManager.SCREEN_BRIGHT_WAKE_LOCK
+                        PowerManager.PARTIAL_WAKE_LOCK
                 , "${BuildConfig.APPLICATION_ID}:Monitor", displayAdapter.mVirtualDisplay.display.displayId).apply {
                     setReferenceCounted(false)
             }
@@ -124,6 +124,8 @@ class DisplayWindow(
                 }
             }
             AndroidHook.FuckAppUseApplicationContext.hook()
+            AndroidHook.VirtualDisplayPower.setAADisplayId(displayAdapter.mDisplayId)
+            AndroidHook.VirtualDisplayPower.hook()
         }
         fun release(){
             if(mScreenOffReplaceLockScreen){
@@ -135,6 +137,7 @@ class DisplayWindow(
                 monitor.release()
             }
             AndroidHook.FuckAppUseApplicationContext.unHook()
+            AndroidHook.VirtualDisplayPower.unHook()
         }
     }
 
@@ -300,6 +303,7 @@ class DisplayWindow(
                 or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                 or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
                 or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM
+                or WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
                 or (if(mScreenOffReplaceLockScreen) WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON else 0),
             PixelFormat.TRANSLUCENT
         ).apply {
@@ -317,6 +321,7 @@ class DisplayWindow(
                 or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                 or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
                 or WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM
+                or WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
                 or (if(mScreenOffReplaceLockScreen) WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON else 0)
                 or WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
                 or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
