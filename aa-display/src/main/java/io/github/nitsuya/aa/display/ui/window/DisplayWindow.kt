@@ -74,6 +74,7 @@ class DisplayWindow(
     }
 
     private var mScreenOffReplaceLockScreen = AADisplayConfig.ScreenOffReplaceLockScreen.get(CoreManagerService.config)
+    private val mFloatingPopupEnabled = AADisplayConfig.FloatingPopup.get(CoreManagerService.config)
     private val mDelayDestroyTime = AADisplayConfig.DelayDestroyTime.get(CoreManagerService.config).let { value ->
         if (value < 0) 0 else value
     }
@@ -151,7 +152,9 @@ class DisplayWindow(
             log(TAG, "init: new window failed may you forget reboot", it)
             TipUtil.showToast("new window failed\nmay you forget reboot")
         }.onSuccess {
-            doInit()
+            if (mFloatingPopupEnabled) {
+                doInit()
+            }
         }
         interactiveMonitor.init()
     }
@@ -355,6 +358,7 @@ class DisplayWindow(
         mDisplayHeight = height
         interactiveMonitor.init()
         mDestroyJob?.cancelAndJoin()
+        if (!mFloatingPopupEnabled) return
         updateDipslaySize()
         mAaDisconnectType = AA_DISCONNECT_DELAY_EXIT_TYPE
         mControllerBinding?.apply {

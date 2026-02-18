@@ -75,35 +75,57 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="?dialogPreferredPadding">
+                android:orientation="horizontal"
+                android:padding="?dialogPreferredPadding"
+                android:baselineAligned="false">
 
-                <com.google.android.material.textview.MaterialTextView
-                    style="@style/DeviceInfoDialogLabel"
-                    android:layout_width="match_parent"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="@string/info_root_privilege" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/root_privilege"
-                    style="@style/DeviceInfoDialogValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                    <com.google.android.material.textview.MaterialTextView
+                        style="@style/DeviceInfoDialogLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/info_root_privilege" />
 
-                <com.google.android.material.textview.MaterialTextView
-                    style="@style/DeviceInfoDialogLabel"
-                    android:layout_width="match_parent"
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/root_privilege"
+                        style="@style/DeviceInfoDialogValue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="@string/info_system_version" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/system_version"
-                    style="@style/DeviceInfoDialogValue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+                    <com.google.android.material.textview.MaterialTextView
+                        style="@style/DeviceInfoDialogLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/info_system_version" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/system_version"
+                        style="@style/DeviceInfoDialogValue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
+
+        <FrameLayout
+            android:id="@+id/fl_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" />
 
     </LinearLayout>
 </ScrollView>

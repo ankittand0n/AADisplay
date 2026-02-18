@@ -20,6 +20,8 @@
     <string name="SettingsDestructionDelay">Delayed Destroy Time</string>
     <string name="SettingsReplaceLockScreenTitle">Screen Off Only</string>
     <string name="SettingsReplaceLockScreenSummary">Replace power button with screen off only</string>
+    <string name="SettingsFloatingPopupTitle">Floating Popup</string>
+    <string name="SettingsFloatingPopupSummary">Show the floating controller popup when connected to Android Auto</string>
     <string name="SettingsCloseLauncherDashboard">Block AA Split Screen Switch</string>
     <string name="SettingsCloseLauncherDashboardSummary">ON: fullscreen. OFF: widget mode. Toggling will restart both apps.</string>
     <string name="SettingsForceRightAngle">Force Right Angle</string>

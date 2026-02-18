@@ -56,6 +56,13 @@
             app:iconSpaceReserved="false"/>
 
         <rikka.material.preference.MaterialSwitchPreference
+            app:defaultValue="true"
+            app:key="FloatingPopup"
+            app:title="@string/SettingsFloatingPopupTitle"
+            app:summary="@string/SettingsFloatingPopupSummary"
+            app:iconSpaceReserved="false"/>
+
+        <rikka.material.preference.MaterialSwitchPreference
             app:defaultValue="false"
             app:key="CloseLauncherDashboard"
             app:title="@string/SettingsCloseLauncherDashboard"
