@@ -17,15 +17,17 @@
         <EditTextPreference
             android:inputType="text"
             app:singleLineTitle="true"
-            app:defaultValue="com.wow.carlauncher.mini"
+            app:defaultValue="com.jamal2367.minicarlauncher"
             app:key="LauncherPackage"
             app:title="Preferred Package Name"
+            app:summary="https://github.com/jamal2362/Mini-Car-Launcher"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false"/>
 
         <EditTextPreference
             android:inputType="number"
             app:key="AndroidAutoDpi"
+            app:defaultValue="0"
             app:title="AndroidAutoDpi"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
@@ -33,6 +35,7 @@
         <EditTextPreference
             android:inputType="number"
             app:key="VirtualDisplayDpi"
+            app:defaultValue="0"
             app:title="VirtualDisplayDpi"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
@@ -53,14 +56,14 @@
             app:iconSpaceReserved="false"/>
 
         <rikka.material.preference.MaterialSwitchPreference
-            app:defaultValue="true"
+            app:defaultValue="false"
             app:key="CloseLauncherDashboard"
             app:title="Block AA Split Screen Switch"
             app:summary=""
             app:iconSpaceReserved="false"/>
 
         <rikka.material.preference.MaterialSwitchPreference
-            app:defaultValue="true"
+            app:defaultValue="false"
             app:key="ForceRightAngle"
             app:title="Force Right Angle"
             app:summary=""
