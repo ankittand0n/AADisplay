@@ -209,7 +209,6 @@ object AaUiHook: AaHook() {
 
     private fun hookFacetBar(config: SharedPreferences) {
         val enableDefVoiceAssist = AADisplayConfig.VoiceAssistShell.get(config).isNullOrBlank()
-        val closeLauncherDashboard = AADisplayConfig.CloseLauncherDashboard.get(config)
         val autoOpen = AADisplayConfig.AutoOpen.get(config)
         findMethod(LayoutInflater::class.java) {
             name == "inflate"
@@ -227,13 +226,6 @@ object AaUiHook: AaHook() {
             val layoutInflater = LayoutInflater.from(ctx2)
             val resultViewGroupParent = (resultViewGroup.parent as ViewGroup?)?.apply {
                 removeView(resultViewGroup)
-            }
-            if(closeLauncherDashboard){
-                resultViewGroup.findViewById<View>(resIdLauncherAndDashboardIconId).apply {
-                    setOnClickFinallyListener {
-                        performLongClick()
-                    }
-                }
             }
             val aaFacetBar = layoutInflater.inflate(R.layout.aa_facet_bar, resultViewGroupParent, false) as ConstraintLayout
             if(autoOpen){
@@ -263,19 +255,13 @@ object AaUiHook: AaHook() {
             }
             val topIds = arrayListOf(
                 resIdStatusBarId,
-                resIdLauncherAndDashboardIconContainerId
+                resIdLauncherAndDashboardIconContainerId,
+                resIdAssistantIconContainerId
             )
+            val btnPadding = (12 * ctx.resources.displayMetrics.density).toInt()
+            val btnMargin = (8 * ctx.resources.displayMetrics.density).toInt()
             val bottomIds = arrayListOf(
-                createBtn(R.drawable.ic_aa_home_44){
-                    val intentClick = Intent().apply {
-                        action = AABroadcastConst.ACTION_SCREEN_CONTROL
-                        putExtra(AABroadcastConst.EXTRA_ACTION, KeyEvent.KEYCODE_HOME)
-                    }
-                    setOnClickListener {
-                        ctx.sendBroadcast(intentClick)
-                    }
-                    setPadding(0, 5, 0, 5)
-                },
+                // Recents
                 createBtn(R.drawable.ic_aa_fullscreen_44){
                     val intentClick = Intent().apply {
                         action = AABroadcastConst.ACTION_SCREEN_CONTROL
@@ -284,8 +270,20 @@ object AaUiHook: AaHook() {
                     setOnClickListener {
                         ctx.sendBroadcast(intentClick)
                     }
-                    setPadding(0, 5, 0, 5)
+                    setPadding(0, btnPadding, 0, btnPadding)
                 },
+                // Home
+                createBtn(R.drawable.ic_aa_home_44){
+                    val intentClick = Intent().apply {
+                        action = AABroadcastConst.ACTION_SCREEN_CONTROL
+                        putExtra(AABroadcastConst.EXTRA_ACTION, KeyEvent.KEYCODE_HOME)
+                    }
+                    setOnClickListener {
+                        ctx.sendBroadcast(intentClick)
+                    }
+                    setPadding(0, btnPadding, 0, btnPadding)
+                },
+                // Back
                 createBtn(R.drawable.ic_aa_arrow_back_44){
                     val intentClick = Intent().apply {
                         action = AABroadcastConst.ACTION_SCREEN_CONTROL
@@ -294,10 +292,10 @@ object AaUiHook: AaHook() {
                     setOnClickListener {
                         ctx.sendBroadcast(intentClick)
                     }
-                    setPadding(0, 5, 0, 5)
+                    setPadding(0, btnPadding, 0, btnPadding)
                 },
             )
-            arrayListOf(resIdStatusBarId, resIdLauncherAndDashboardIconContainerId).forEach { vId ->
+            arrayListOf(resIdStatusBarId, resIdLauncherAndDashboardIconContainerId, resIdAssistantIconContainerId).forEach { vId ->
                 val view = resultViewGroup.findViewById<View>(vId)
                 (view.parent as ViewGroup?)?.apply {
                     removeView(view)
@@ -327,7 +325,7 @@ object AaUiHook: AaHook() {
             val set = ConstraintSet()
             set.clone(aaFacetBar)
             bottomIds.forEachIndexed { index, vId ->
-                set.connect(vId, ConstraintSet.BOTTOM, if(index == 0) ConstraintSet.PARENT_ID else bottomIds[index-1], if(index == 0) ConstraintSet.BOTTOM else ConstraintSet.TOP, 0)
+                set.connect(vId, ConstraintSet.BOTTOM, if(index == 0) ConstraintSet.PARENT_ID else bottomIds[index-1], if(index == 0) ConstraintSet.BOTTOM else ConstraintSet.TOP, btnMargin)
                 set.connect(vId, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END, 0)
                 set.connect(vId, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START, 0)
             }
