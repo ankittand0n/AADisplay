@@ -21,6 +21,7 @@
     <string name="SettingsReplaceLockScreenTitle">Screen Off Only</string>
     <string name="SettingsReplaceLockScreenSummary">Replace power button with screen off only</string>
     <string name="SettingsCloseLauncherDashboard">Block AA Split Screen Switch</string>
+    <string name="SettingsCloseLauncherDashboardSummary">ON: fullscreen. OFF: widget mode. Toggling will restart both apps.</string>
     <string name="SettingsForceRightAngle">Force Right Angle</string>
     <string name="SettingsImePolicy">IME Policy</string>
     <string name="SettingsImeDisplayVirtualScreen">Virtual Display</string>

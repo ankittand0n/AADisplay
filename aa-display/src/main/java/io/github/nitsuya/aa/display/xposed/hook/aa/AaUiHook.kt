@@ -170,7 +170,7 @@ object AaUiHook: AaHook() {
     override fun hook(config: SharedPreferences, lpparam: XC_LoadPackage.LoadPackageParam) {
         log(tagName,  "AaUiHook: ~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         hookBaseClick()
-        hookLayout()
+        hookLayout(config)
         hookFacetBar(config)
         hookRadius(config)
     }
@@ -188,16 +188,22 @@ object AaUiHook: AaHook() {
         }.joinToString(separator = "\r\n", prefix = "    ".repeat(index)) { it }
     }
 
-    private fun hookLayout() {
+    private fun hookLayout(config: SharedPreferences) {
         if (layoutInfoConstructor == null) {
             return
         }
+        val forceFullscreen = AADisplayConfig.CloseLauncherDashboard.get(config)
+        log(tagName, "hookLayout: CloseLauncherDashboard (force fullscreen) = $forceFullscreen")
         layoutInfoConstructor?.hookAfter { param -> log(tagName, param.thisObject.toString()) }
         layoutInfoConstructor?.hookBefore { param ->
             if (param.args.size < 5) return@hookBefore
             when(param.args[3] as Int){ //layoutType
                 8,9,10 -> return@hookBefore;
             }
+            // When CloseLauncherDashboard is OFF, don't override layout
+            // AA will show our app as a widget card alongside maps
+            if (!forceFullscreen) return@hookBefore
+            // Fullscreen mode: force canonical vertical rail layout
             var isRightHandDrive = param.args[4] as Boolean // isRightHandDrive left false, right:true
             param.args[0] = if(isRightHandDrive) resLayoutRightResourceId else resLayoutLeftResourceId
             param.args[3] = if(isRightHandDrive) 4 else 3//layoutType left:3, right:4

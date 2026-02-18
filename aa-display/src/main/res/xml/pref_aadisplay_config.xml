@@ -59,7 +59,7 @@
             app:defaultValue="false"
             app:key="CloseLauncherDashboard"
             app:title="@string/SettingsCloseLauncherDashboard"
-            app:summary=""
+            app:summary="@string/SettingsCloseLauncherDashboardSummary"
             app:iconSpaceReserved="false"/>
 
         <rikka.material.preference.MaterialSwitchPreference
