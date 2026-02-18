@@ -75,6 +75,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
         aidl = true
     }
     lint {
@@ -132,4 +133,9 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
 
+}
+
+// Fix AIDL compilation encoding issues (Unicode characters in AIDL files)
+tasks.withType<JavaCompile>().configureEach {
+    options.encoding = "UTF-8"
 }

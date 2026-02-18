@@ -124,6 +124,7 @@ class AaMainFragment : BaseFragment<FragmentAaMainBinding>(FragmentAaMainBinding
         }
     }
 
+    @SuppressLint("WorldReadableFiles")
     override fun initViews() {
         config = this.requireContext().getSharedPreferences(AADisplayConfig.ConfigName, MediaBrowserServiceCompat.MODE_WORLD_READABLE)
         baseBinding.tvDisplay.post  {
@@ -145,7 +146,7 @@ class AaMainFragment : BaseFragment<FragmentAaMainBinding>(FragmentAaMainBinding
                             baseBinding.tvDisplay.surfaceTextureListener = this@AaMainFragment
                             baseBinding.tvDisplay.setOnTouchListener { _, e ->
                                 val uptimeMillis = SystemClock.uptimeMillis()
-                                if (e.action === MotionEvent.ACTION_DOWN) {
+                                if (e.action == MotionEvent.ACTION_DOWN) {
                                     repairDownTime = uptimeMillis
                                 }
                                 val pointerCoords: Array<MotionEvent.PointerCoords?> = arrayOfNulls(e.pointerCount)

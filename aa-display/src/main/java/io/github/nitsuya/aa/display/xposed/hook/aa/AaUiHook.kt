@@ -43,7 +43,7 @@ import java.lang.reflect.Method
 object AaUiHook: AaHook() {
     override val tagName: String = "AAD_AaUiHook"
 
-    private lateinit var layoutInfoConstructor: Constructor<*>
+    private var layoutInfoConstructor: Constructor<*>? = null
     private var startMethod: Method? = null
 
     private var resLayoutLeftResourceId: Int = 0
@@ -60,33 +60,82 @@ object AaUiHook: AaHook() {
         return processProjection == processName
     }
 
-    override fun loadDexClass(bridge: DexKitBridge, lpparam: XC_LoadPackage.LoadPackageParam) {
-        val classes = bridge.findClass {
-            searchPackages = listOf("")
-            matcher {
-                usingStrings {
-                    add(
-                        "LayoutInfo{layoutResourceId=",
-                        StringMatchType.StartsWith,
-                        false
-                    )
+    private fun hookLayoutInfo(bridge: DexKitBridge): Boolean {
+        try {
+            val classes = bridge.findClass {
+                searchPackages = listOf("")
+                matcher {
+                    usingStrings {
+                        add(
+                            "LayoutInfo{layoutResourceId=",
+                            StringMatchType.StartsWith,
+                            false
+                        )
+                    }
                 }
             }
+            if (classes.isEmpty() || classes.size > 1) {
+                throw NoSuchMethodException("AaUiHook: not found LayoutInfo class: ${classes.size}")
+            }
+            val className = classes[0].name
+            layoutInfoConstructor = resolveLayoutInfoConstructor(className)
+            return true
+        } catch (t: Throwable) {
+            log(tagName, "Failed to hook LayoutInfo", t)
+            return false
         }
-        if (classes.isEmpty() || classes.size > 1) {
-            throw NoSuchMethodException("AaUiHook: not found LayoutInfo class：${classes.size}")
-        }
-        layoutInfoConstructor = findConstructor(classes[0].name) {
-            //int i, int i2, int i3, int i4, boolean z, boolean z2, jby jbyVar, boolean z3
-            parameterCount == 8
-            && parameterTypes[0] == Int::class.javaPrimitiveType       //layoutResourceId
-            && parameterTypes[1] == Int::class.javaPrimitiveType       //displayWidthDp
-            && parameterTypes[2] == Int::class.javaPrimitiveType       //displayHeightDp
-            && parameterTypes[3] == Int::class.javaPrimitiveType       //layoutType
-            && parameterTypes[4] == Boolean::class.javaPrimitiveType   //isRightHandDrive
-            && parameterTypes[5] == Boolean::class.javaPrimitiveType   //hasVerticalRail
-            //&& parameterTypes[6] == Object                           //carDisplayUiInfo
-            && parameterTypes[7] == Boolean::class.javaPrimitiveType   //isDriverAlignedDashboard
+    }
+
+    private fun resolveLayoutInfoConstructor(className: String): Constructor<*> {
+        // Try strict 8-param constructor first (original AA versions)
+        val strictMatch = runCatching {
+            findConstructor(className) {
+                parameterCount == 8
+                && parameterTypes[0] == Int::class.javaPrimitiveType
+                && parameterTypes[1] == Int::class.javaPrimitiveType
+                && parameterTypes[2] == Int::class.javaPrimitiveType
+                && parameterTypes[3] == Int::class.javaPrimitiveType
+                && parameterTypes[4] == Boolean::class.javaPrimitiveType
+                && parameterTypes[5] == Boolean::class.javaPrimitiveType
+                && parameterTypes[7] == Boolean::class.javaPrimitiveType
+            }
+        }.getOrNull()
+        if (strictMatch != null) return strictMatch
+
+        // Try 9-param constructor (newer AA versions)
+        val nineParamMatch = runCatching {
+            findConstructor(className) {
+                parameterCount == 9
+                && parameterTypes[0] == Int::class.javaPrimitiveType
+                && parameterTypes[1] == Int::class.javaPrimitiveType
+                && parameterTypes[2] == Int::class.javaPrimitiveType
+                && parameterTypes[3] == Int::class.javaPrimitiveType
+                && parameterTypes[4] == Boolean::class.javaPrimitiveType
+                && parameterTypes[5] == Boolean::class.javaPrimitiveType
+            }
+        }.getOrNull()
+        if (nineParamMatch != null) return nineParamMatch
+
+        // Fallback: any constructor with 5+ params matching the known prefix pattern
+        val clazz = loadClass(className)
+        val fallback = clazz.declaredConstructors.firstOrNull { ctor ->
+            val p = ctor.parameterTypes
+            p.size >= 5
+            && p[0] == Int::class.javaPrimitiveType
+            && p[1] == Int::class.javaPrimitiveType
+            && p[2] == Int::class.javaPrimitiveType
+            && p[3] == Int::class.javaPrimitiveType
+            && p[4] == Boolean::class.javaPrimitiveType
+        } ?: throw NoSuchMethodException("AaUiHook: not found compatible LayoutInfo constructor for $className")
+
+        fallback.isAccessible = true
+        log(tagName, "AaUiHook: fallback constructor selected, paramCount=${fallback.parameterCount}")
+        return fallback
+    }
+
+    override fun loadDexClass(bridge: DexKitBridge, lpparam: XC_LoadPackage.LoadPackageParam) {
+        if (!hookLayoutInfo(bridge)) {
+            return
         }
 
         try{
@@ -140,15 +189,21 @@ object AaUiHook: AaHook() {
     }
 
     private fun hookLayout() {
-        layoutInfoConstructor.hookAfter { param -> log(tagName, param.thisObject.toString()) }
-        layoutInfoConstructor.hookBefore { param ->
+        if (layoutInfoConstructor == null) {
+            return
+        }
+        layoutInfoConstructor?.hookAfter { param -> log(tagName, param.thisObject.toString()) }
+        layoutInfoConstructor?.hookBefore { param ->
+            if (param.args.size < 5) return@hookBefore
             when(param.args[3] as Int){ //layoutType
                 8,9,10 -> return@hookBefore;
             }
             var isRightHandDrive = param.args[4] as Boolean // isRightHandDrive left false, right:true
             param.args[0] = if(isRightHandDrive) resLayoutRightResourceId else resLayoutLeftResourceId
             param.args[3] = if(isRightHandDrive) 4 else 3//layoutType left:3, right:4
-            param.args[5] = true //hasVerticalRail
+            if (param.args.size > 5 && param.args[5] is Boolean) {
+                param.args[5] = true //hasVerticalRail
+            }
         }
     }
 
@@ -211,26 +266,6 @@ object AaUiHook: AaHook() {
                 resIdLauncherAndDashboardIconContainerId
             )
             val bottomIds = arrayListOf(
-                createBtn(R.drawable.ic_aa_filter_none_44){
-                    val intentClick = Intent().apply {
-                        action = AABroadcastConst.ACTION_SCREEN_CONTROL
-                        putExtra(AABroadcastConst.EXTRA_ACTION, KeyEvent.KEYCODE_DEMO_APP_1)
-                    }
-                    setOnClickListener {
-                        ctx.sendBroadcast(intentClick)
-                    }
-                    setPadding(0, 5, 0, 2)
-                },
-                createBtn(R.drawable.ic_aa_arrow_back_44){
-                    val intentClick = Intent().apply {
-                        action = AABroadcastConst.ACTION_SCREEN_CONTROL
-                        putExtra(AABroadcastConst.EXTRA_ACTION, KeyEvent.KEYCODE_BACK)
-                    }
-                    setOnClickListener {
-                        ctx.sendBroadcast(intentClick)
-                    }
-                    setPadding(0, 5, 0, 5)
-                },
                 createBtn(R.drawable.ic_aa_home_44){
                     val intentClick = Intent().apply {
                         action = AABroadcastConst.ACTION_SCREEN_CONTROL
@@ -251,30 +286,18 @@ object AaUiHook: AaHook() {
                     }
                     setPadding(0, 5, 0, 5)
                 },
-                createBtn(R.drawable.ic_aa_phone_44){
+                createBtn(R.drawable.ic_aa_arrow_back_44){
                     val intentClick = Intent().apply {
                         action = AABroadcastConst.ACTION_SCREEN_CONTROL
-                        putExtra(AABroadcastConst.EXTRA_ACTION, KeyEvent.KEYCODE_FEATURED_APP_1)
+                        putExtra(AABroadcastConst.EXTRA_ACTION, KeyEvent.KEYCODE_BACK)
                     }
                     setOnClickListener {
                         ctx.sendBroadcast(intentClick)
                     }
-                    setPadding(0, 5, 0, 10)
-                },
-                resultViewGroup.findViewById<View>(resIdAssistantIconId).run {
-                    if(!enableDefVoiceAssist){
-                        val intentClick = Intent().apply {
-                            action = AABroadcastConst.ACTION_SCREEN_CONTROL
-                            putExtra(AABroadcastConst.EXTRA_ACTION, KeyEvent.KEYCODE_SEARCH)
-                        }
-                        setOnClickFinallyListener {
-                            ctx.sendBroadcast(intentClick)
-                        }
-                    }
-                    resIdAssistantIconContainerId
+                    setPadding(0, 5, 0, 5)
                 },
             )
-            arrayListOf(resIdStatusBarId, resIdLauncherAndDashboardIconContainerId, resIdAssistantIconContainerId).forEach { vId ->
+            arrayListOf(resIdStatusBarId, resIdLauncherAndDashboardIconContainerId).forEach { vId ->
                 val view = resultViewGroup.findViewById<View>(vId)
                 (view.parent as ViewGroup?)?.apply {
                     removeView(view)
@@ -362,23 +385,62 @@ object AaUiHook: AaHook() {
     }
 
     private fun hookRadius(config: SharedPreferences) {
-        if(!AADisplayConfig.ForceRightAngle.get(config)){
+        if (!AADisplayConfig.ForceRightAngle.get(config)) {
             return
         }
-        try{
-            findConstructor("com.google.android.gms.car.ProjectionWindowDecorationParams"){
-                parameterCount == 9
-                && parameterTypes[0] == Int::class.javaPrimitiveType //outlineLeft
-                && parameterTypes[1] == Int::class.javaPrimitiveType //outlineTop
-                && parameterTypes[2] == Int::class.javaPrimitiveType //outlineRight
-                && parameterTypes[3] == Int::class.javaPrimitiveType //outlineBottom
-                && parameterTypes[4] == Int::class.javaPrimitiveType //corners
-                && parameterTypes[5] == Int::class.javaPrimitiveType //cornerRadius
-                && parameterTypes[6] == Int::class.javaPrimitiveType //antiAliasingType
-                && parameterTypes[7] == Boolean::class.javaPrimitiveType //showOutlinesOnlyWhenInset
-                && parameterTypes[8] == Boolean::class.javaPrimitiveType //showRoundedCornersOnlyWhenInset
-            }.hookBefore { param ->
-                param.args[5] = 0
+        try {
+            // Attempt 1: Strict 9-argument constructor (legacy AA versions)
+            try {
+                findConstructor("com.google.android.gms.car.ProjectionWindowDecorationParams") {
+                    parameterCount == 9
+                    && parameterTypes[0] == Int::class.javaPrimitiveType
+                    && parameterTypes[1] == Int::class.javaPrimitiveType
+                    && parameterTypes[2] == Int::class.javaPrimitiveType
+                    && parameterTypes[3] == Int::class.javaPrimitiveType
+                    && parameterTypes[4] == Int::class.javaPrimitiveType
+                    && parameterTypes[5] == Int::class.javaPrimitiveType // Corner Radius
+                    && parameterTypes[6] == Int::class.javaPrimitiveType
+                    && parameterTypes[7] == Boolean::class.javaPrimitiveType
+                    && parameterTypes[8] == Boolean::class.javaPrimitiveType
+                }.hookBefore { param ->
+                    param.args[5] = 0 // Set corner radius to 0
+                }
+                return // Success, exit function
+            } catch (e: Exception) {
+                log(tagName, "Strict 9-arg constructor not found, trying fallback...")
+            }
+
+            // Attempt 2: Constructor with 9 or 10 parameters (newer AA versions)
+            try {
+                findConstructor("com.google.android.gms.car.ProjectionWindowDecorationParams") {
+                    parameterCount == 9 || parameterCount == 10
+                }.hookBefore { param ->
+                    try {
+                        param.args[5] = 0
+                    } catch (e: Throwable) {
+                        log(tagName, "Failed to set radius at index 5", e)
+                    }
+                }
+                return // Success, exit function
+            } catch (e: Exception) {
+                log(tagName, "9/10-arg constructor not found, trying 4-arg...")
+            }
+
+            // Attempt 3: Constructor with 4 parameters (alternative signature)
+            try {
+                findConstructor("com.google.android.gms.car.ProjectionWindowDecorationParams") {
+                    parameterCount == 4
+                }.hookBefore { param ->
+                    try {
+                        param.args[3] = 0f // Try float
+                    } catch (_: Throwable) {
+                        try {
+                            param.args[3] = 0 // Try int
+                        } catch (_: Throwable) { }
+                    }
+                }
+            } catch (e: Exception) {
+                log(tagName, "No compatible ProjectionWindowDecorationParams constructor found", e)
             }
         } catch (e: Throwable) {
             log(tagName, "ProjectionWindowDecorationParams", e)

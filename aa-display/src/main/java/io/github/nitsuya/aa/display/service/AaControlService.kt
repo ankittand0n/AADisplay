@@ -1,5 +1,6 @@
 package io.github.nitsuya.aa.display.service
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.ComponentName
 import android.content.Intent
@@ -144,6 +145,7 @@ class AaControlService: MediaBrowserServiceCompat() {
         }.joinToString(separator = "\r\n", prefix = "    ".repeat(index)) { it }
     }
 
+    @SuppressLint("WorldReadableFiles")
     override fun onCreate() {
         super.onCreate()
         config = this.getSharedPreferences(AADisplayConfig.ConfigName, MODE_WORLD_READABLE)

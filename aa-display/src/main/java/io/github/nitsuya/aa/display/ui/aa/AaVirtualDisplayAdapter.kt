@@ -43,8 +43,7 @@ class AaVirtualDisplayAdapter(
 
         private val IGNORE_RECENT_PACKAGE = setOf(
             BuildConfig.APPLICATION_ID,
-            "com.miui.home",
-            "com.google.android.apps.nexuslauncher",
+            "com.android.launcher3",
         )
     }
 
@@ -139,7 +138,11 @@ class AaVirtualDisplayAdapter(
                     PixelFormat.TRANSPARENT
                 ).also {
                     it.gravity = Gravity.START or Gravity.TOP
-                    it.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                    it.screenOrientation = if (width > height) {
+                        ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                    } else {
+                        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                    }
                     it.alpha = 0f
                     it.width = 0
                     it.height = 0
@@ -467,5 +470,12 @@ class AaVirtualDisplayAdapter(
         override fun onTaskbarIconVisibleChangeRequest(componentName: ComponentName?, z: Boolean) {}
         //Samsung OneUi 7
         override fun onTaskWindowingModeChanged(i: Int) {}
+
+        // Compatibility shim for Android/AA 15.6+
+        override fun onRecentTaskRemovedForAddTask(taskId: Int) {
+            try {
+                // compatibility no-op
+            } catch (_: Throwable) { }
+        }
     }
 }

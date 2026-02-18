@@ -4,14 +4,14 @@
 
     <PreferenceCategory
         app:key="CategoryBase"
-        app:title="Basic Configuration"
+        app:title="@string/SettingsCategoryBasic"
         app:iconSpaceReserved="false">
 
         <rikka.material.preference.MaterialSwitchPreference
             app:defaultValue="true"
             app:key="AutoOpen"
-            app:title="Auto Open"
-            app:summary="Automatically open the app after connecting Android Auto"
+            app:title="@string/SettingsAutoOpenTitle"
+            app:summary="@string/SettingsAutoOpenSummary"
             app:iconSpaceReserved="false"/>
 
         <EditTextPreference
@@ -19,7 +19,7 @@
             app:singleLineTitle="true"
             app:defaultValue="com.jamal2367.minicarlauncher"
             app:key="LauncherPackage"
-            app:title="Preferred Package Name"
+            app:title="@string/SettingsAutoOpenPackageName"
             app:summary="https://github.com/jamal2362/Mini-Car-Launcher"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false"/>
@@ -28,7 +28,7 @@
             android:inputType="number"
             app:key="AndroidAutoDpi"
             app:defaultValue="0"
-            app:title="AndroidAutoDpi"
+            app:title="@string/SettingsAndroidAutoDpi"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
 
@@ -36,7 +36,7 @@
             android:inputType="number"
             app:key="VirtualDisplayDpi"
             app:defaultValue="0"
-            app:title="VirtualDisplayDpi"
+            app:title="@string/SettingsVirtualDisplayDpi"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
 
@@ -44,35 +44,35 @@
             android:inputType="number"
             app:defaultValue="180"
             app:key="DelayDestroyTime"
-            app:title="Delayed Destroy Time"
+            app:title="@string/SettingsDestructionDelay"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
 
         <rikka.material.preference.MaterialSwitchPreference
             app:defaultValue="false"
             app:key="ScreenOffReplaceLockScreen"
-            app:title="Screen Off Only"
-            app:summary="Replace power button with screen off only"
+            app:title="@string/SettingsReplaceLockScreenTitle"
+            app:summary="@string/SettingsReplaceLockScreenSummary"
             app:iconSpaceReserved="false"/>
 
         <rikka.material.preference.MaterialSwitchPreference
             app:defaultValue="false"
             app:key="CloseLauncherDashboard"
-            app:title="Block AA Split Screen Switch"
+            app:title="@string/SettingsCloseLauncherDashboard"
             app:summary=""
             app:iconSpaceReserved="false"/>
 
         <rikka.material.preference.MaterialSwitchPreference
             app:defaultValue="false"
             app:key="ForceRightAngle"
-            app:title="Force Right Angle"
+            app:title="@string/SettingsForceRightAngle"
             app:summary=""
             app:iconSpaceReserved="false"/>
 
         <ListPreference
             app:key="DisplayImePolicy"
             app:defaultValue="1"
-            app:title="ImePolicy"
+            app:title="@string/SettingsImePolicy"
             app:entries="@array/ime_policy_keys"
             app:entryValues="@array/ime_policy_values"
             app:useSimpleSummaryProvider="true"
@@ -83,7 +83,7 @@
             app:singleLineTitle="true"
             app:defaultValue="am start com.miui.voiceassist/com.xiaomi.voiceassistant.CTAAlertActivity"
             app:key="VoiceAssistShell"
-            app:title="Voice Assistant Shell"
+            app:title="@string/SettingsVoiceAssistantShell"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false"/>
 
@@ -91,20 +91,20 @@
 
     <PreferenceCategory
         app:key="CategoryShell"
-        app:title="Shell Commands"
+        app:title="@string/SettingsCategoryShell"
         app:iconSpaceReserved="false">
 
         <EditTextPreference
             android:inputType="textMultiLine"
             app:key="CreateVirtualDisplayBefore"
-            app:title="Execute Before Creating Virtual Display"
+            app:title="@string/SettingsShellCreateVirtualDisplayBefore"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false"/>
 
         <EditTextPreference
             android:inputType="textMultiLine"
             app:key="DestroyVirtualDisplayAfter"
-            app:title="Execute After Destroying Virtual Display"
+            app:title="@string/SettingsShellDestroyVirtualDisplayAfter"
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false"/>
 
@@ -112,14 +112,14 @@
 
     <PreferenceCategory
         app:key="CategoryPhysicalBtn"
-        app:title="Physical Buttons"
+        app:title="@string/SettingsCategoryPhysicalBtn"
         app:summary="TODO"
         app:iconSpaceReserved="false">
     </PreferenceCategory>
 
     <PreferenceCategory
         app:key="CategoryAndroidAuto"
-        app:title="AndroidAuto Configuration"
+        app:title="@string/SettingsCategoryAndroidAutoProps"
         app:summary="[com.google.android."
         app:singleLineTitle="true"
         app:iconSpaceReserved="false">

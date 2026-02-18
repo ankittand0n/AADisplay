@@ -6,8 +6,8 @@
     </string-array>
 
     <string-array name="ime_policy_keys">
-        <item>Virtual Display</item>
-        <item>Main Screen</item>
+        <item>@string/SettingsImeDisplayVirtualScreen</item>
+        <item>@string/SettingsImeDisplayMainScreen</item>
     </string-array>
 
     <string-array name="ime_policy_values">

@@ -49,6 +49,9 @@ public interface ITaskStackListener extends IInterface {
     //Samsung OneUi 7
     void onTaskbarIconVisibleChangeRequest(ComponentName componentName, boolean z) throws RemoteException;
 
+    // Compatibility shim for Android/AA 15.6+
+    void onRecentTaskRemovedForAddTask(int taskId) throws RemoteException;
+
     abstract class Stub extends Binder implements ITaskStackListener {
         public static IDisplayManager asInterface(IBinder binder) {
             throw new UnsupportedOperationException();
