@@ -124,7 +124,7 @@ class AaVirtualDisplayAdapter(
                 setShouldShowSystemDecors(mDisplayId, false)
             }
         } catch (e : Throwable){
-            log(TAG, "设置虚拟屏幕参数失败: ", e)
+            log(TAG, "Failed to set virtual display parameters: ", e)
         }
         //mDisplayWindowManager = context.createDisplayContext(mVirtualDisplay.display).getSystemService(WindowManager::class.java).apply {
         mDisplayWindowManager = context.createDisplayContext(mVirtualDisplay.display).createWindowContext(mVirtualDisplay.display, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, null).getSystemService(WindowManager::class.java).apply {
